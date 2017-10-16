@@ -2,6 +2,7 @@ module Main where
 
 import Control.Exception ( catch, throwIO )
 import Data.Char         ( ord, chr )
+import System.IO.Error   ( isEOFError )
 
 main :: IO ()
 main = do
@@ -32,6 +33,12 @@ initDump = [ ([App 1 1], []), ([], []) ]
 
 type MachineConfig = (Code, Environment, Dump)
 
+churchTrue :: SemanticObject
+churchTrue = undefined
+
+churchFalse :: SemanticObject
+churchFalse = undefined
+
 decodeChurch :: SemanticObject -> Maybe Char
 decodeChurch = undefined
 
@@ -55,7 +62,9 @@ transform :: MachineConfig -> IO MachineConfig
 transform (App m n : code, env, dump) =
     let (func, arg) = (env !! m, env !! n)
     in case func of
-        LowerW -> undefined
+        LowerW -> if decodeChurch LowerW == Just 'w'
+            then return (code, churchTrue  : env, dump)
+            else return (code, churchFalse : env, dump)
         Out -> case decodeChurch arg of
             Nothing -> error "failed to decode"
             Just c  -> putChar c >> return (code, arg : env, dump)
