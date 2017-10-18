@@ -34,10 +34,10 @@ initDump = [ ([App 1 1], []), ([], []) ]
 type MachineConfig = (Code, Environment, Dump)
 
 churchTrue :: SemanticObject
-churchTrue = undefined
+churchTrue = Closure [Abs 2 [App 3 2]] [([], [])]
 
 churchFalse :: SemanticObject
-churchFalse = undefined
+churchFalse = Closure [Abs 2 []] []
 
 decodeChurch :: SemanticObject -> Maybe Char
 decodeChurch = undefined
