@@ -73,7 +73,7 @@ transform (App m n : code, env, dump) =
             case mChar of
                 Nothing -> return (code, arg : env, dump)
                 Just c  -> case encodeChurch c of
-                    Nothing  -> error "failed to decode"
+                    Nothing  -> error "failed to encode"
                     Just res -> return (code, res : env, dump)
         Succ -> case decodeChurch arg of
             Nothing -> error "failed to decode"
