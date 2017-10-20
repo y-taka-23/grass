@@ -34,7 +34,7 @@ initDump = [ ([App 1 1], []), ([], []) ]
 type MachineConfig = (Code, Environment, Dump)
 
 churchTrue :: SemanticObject
-churchTrue = Closure [Abs 2 [App 3 2]] [([], [])]
+churchTrue = Closure [Abs 2 [App 3 2]] [Closure [] []]
 
 churchFalse :: SemanticObject
 churchFalse = Closure [Abs 2 []] []
