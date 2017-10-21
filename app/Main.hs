@@ -43,7 +43,16 @@ decodeChurch :: SemanticObject -> Maybe Char
 decodeChurch = undefined
 
 encodeChurch :: Char -> Maybe SemanticObject
-encodeChurch = undefined
+encodeChurch c
+    | isGrassChar c = Just $ Closure [Abs 2 (mkCode n)] []
+    | otherwise     = Nothing
+    where
+        n        = ord c
+        mkCode 0 = []
+        mkCode n = mkCode (n - 1) ++ [App (n + 1) 1]
+
+isGrassChar :: Char -> Bool
+isGrassChar c = let n = ord c in 0 <= n && n <= 255
 
 succCode :: Char -> Char
 succCode c = chr $ ord c + 1 `mod` 255
