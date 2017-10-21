@@ -40,7 +40,11 @@ churchFalse :: SemanticObject
 churchFalse = Closure [Abs 2 []] []
 
 decodeChurch :: SemanticObject -> Maybe Char
-decodeChurch = undefined
+decodeChurch LowerW             = Just 'w'
+decodeChurch Out                = Nothing
+decodeChurch In                 = Nothing
+decodeChurch Succ               = Nothing
+decodeChurch (Closure code env) = undefined
 
 encodeChurch :: Char -> Maybe SemanticObject
 encodeChurch c
