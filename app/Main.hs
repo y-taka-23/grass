@@ -2,6 +2,7 @@ module Main where
 
 import Control.Exception ( catch, throwIO )
 import Data.Char         ( ord, chr )
+import Safe              ( atMay )
 import System.IO.Error   ( isEOFError )
 
 main :: IO ()
@@ -40,11 +41,27 @@ churchFalse :: SemanticObject
 churchFalse = Closure [Abs 2 []] []
 
 decodeChurch :: SemanticObject -> Maybe Char
-decodeChurch LowerW             = Just 'w'
-decodeChurch Out                = Nothing
-decodeChurch In                 = Nothing
-decodeChurch Succ               = Nothing
-decodeChurch (Closure code env) = undefined
+decodeChurch LowerW = Just 'w'
+decodeChurch Out    = Nothing
+decodeChurch In     = Nothing
+decodeChurch Succ   = Nothing
+decodeChurch (Closure [Abs 2 code] env) =
+    case evalChurch code [ElemInt 0, ElemFunc succ] of
+        Nothing -> Nothing
+        Just i  -> if isGrassChar (chr i) then Just (chr i) else Nothing
+
+data StackElem =
+      ElemInt  Int
+    | ElemFunc (Int -> Int)
+
+evalChurch :: Code -> [StackElem] -> Maybe Int
+evalChurch [] (ElemInt i : stack') = Just i
+evalChurch [] _                    = Nothing
+evalChurch (Abs _ _ : _) _         = Nothing
+evalChurch (App m n : code') stack =
+    case (atMay stack (m - 1), atMay stack (n - 1)) of
+        (Just (ElemFunc f), Just (ElemInt i)) -> evalChurch code' (ElemInt (f i) : stack)
+        (_,                 _               ) -> Nothing
 
 encodeChurch :: Char -> Maybe SemanticObject
 encodeChurch c
