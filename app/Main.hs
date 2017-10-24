@@ -114,3 +114,11 @@ transform (App m n : code, env, dump) =
 transform (Abs 1 code' : code, env, dump) = return (code, Closure code' env : env, dump)
 transform (Abs n code' : code, env, dump) = return (code, Closure [Abs (n - 1) code'] env : env, dump)
 transform ([], obj : _, (code', env') : dump) = return (code', obj : env', dump)
+
+run :: Code -> IO SemanticObject
+run initCode = eval (initCode, initEnv, initDump)
+    where
+        eval :: MachineConfig -> IO MachineConfig
+        eval ([], [obj], []) -> return obj
+        eval (code, env, dump) =
+            transform (code, env, dump) >>= eval
