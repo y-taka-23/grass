@@ -118,7 +118,7 @@ transform ([], obj : _, (code', env') : dump) = return (code', obj : env', dump)
 run :: Code -> IO SemanticObject
 run initCode = eval (initCode, initEnv, initDump)
     where
-        eval :: MachineConfig -> IO MachineConfig
-        eval ([], [obj], []) -> return obj
+        eval :: MachineConfig -> IO SemanticObject
+        eval ([], [obj], [])   = return obj
         eval (code, env, dump) =
             transform (code, env, dump) >>= eval
