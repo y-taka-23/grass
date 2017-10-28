@@ -90,7 +90,7 @@ safeGetChar =
 
 transform :: MachineConfig -> IO MachineConfig
 transform (App m n : code, env, dump) =
-    let (func, arg) = (env !! m, env !! n)
+    let (func, arg) = (env !! (m - 1), env !! (n - 1))
     in case func of
         LowerW -> if decodeChurch LowerW == Just 'w'
             then return (code, churchTrue  : env, dump)
