@@ -1,13 +1,54 @@
 module Main where
 
-import Control.Exception ( catch, throwIO )
-import Data.Char         ( ord, chr )
-import Safe              ( atMay )
-import System.IO.Error   ( isEOFError )
+import Control.Exception      ( catch, throwIO )
+import Data.Char              ( ord, chr )
+import Safe                   ( atMay )
+import System.IO.Error        ( isEOFError )
+import Text.Megaparsec        ( some, char, many, (<|>) )
+import Text.Megaparsec.String ( Parser )
 
 main :: IO ()
 main = do
     putStrLn "Hello, Grass!"
+
+upperWP :: Parser Char
+upperWP = char 'W' <|> char 'Ｗ'
+
+lowerWP :: Parser Char
+lowerWP = char 'w' <|> char 'ｗ'
+
+lowerVP :: Parser Char
+lowerVP = char 'v' <|> char 'ｖ'
+
+appP :: Parser Instruction
+appP = do
+    funcIdx <- some upperWP
+    argIdx  <- some lowerWP
+    return $ App (length funcIdx) (length argIdx)
+
+absP :: Parser Instruction
+absP = do
+    argNum <- some lowerWP
+    body   <- many appP
+    return $ Abs (length argNum) body
+
+codeP :: Parser Code
+codeP = do
+    abs  <- absP
+    rest <- restCodeP
+    return $ abs : rest
+
+restCodeP :: Parser Code
+restCodeP = restAbsP <|> restAppsP <|> mempty
+    where
+        restAbsP = do
+            _   <- lowerVP
+            abs <- absP
+            return [abs]
+        restAppsP = do
+            _    <- lowerVP
+            apps <- many appP
+            return apps
 
 data Instruction =
       App Int Int
