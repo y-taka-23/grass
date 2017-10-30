@@ -1,24 +1,32 @@
 module Main where
 
-import Control.Exception      ( catch, throwIO )
-import Data.Char              ( ord, chr )
-import Safe                   ( atMay )
-import System.IO.Error        ( isEOFError )
-import Text.Megaparsec        ( some, char, many, (<|>) )
-import Text.Megaparsec.String ( Parser )
+import           Control.Exception      ( catch, throwIO )
+import           Data.Char              ( ord, chr )
+import           Data.Functor           ( void )
+import           Safe                   ( atMay )
+import           System.IO.Error        ( isEOFError )
+import           Text.Megaparsec        ( some, char, many, noneOf, (<|>) )
+import qualified Text.Megaparsec.Lexer  as L
+import           Text.Megaparsec.String ( Parser )
 
 main :: IO ()
 main = do
     putStrLn "Hello, Grass!"
 
+ignoredP :: Parser Char
+ignoredP = noneOf "WwvＷｗｖ"
+
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme $ void $ many ignoredP
+
 upperWP :: Parser Char
-upperWP = char 'W' <|> char 'Ｗ'
+upperWP = lexeme $ char 'W' <|> char 'Ｗ'
 
 lowerWP :: Parser Char
-lowerWP = char 'w' <|> char 'ｗ'
+lowerWP = lexeme $ char 'w' <|> char 'ｗ'
 
 lowerVP :: Parser Char
-lowerVP = char 'v' <|> char 'ｖ'
+lowerVP = lexeme $ char 'v' <|> char 'ｖ'
 
 appP :: Parser Instruction
 appP = do
@@ -34,6 +42,7 @@ absP = do
 
 codeP :: Parser Code
 codeP = do
+    _    <- many ignoredP
     abs  <- absP
     rest <- restCodeP
     return $ abs : rest
