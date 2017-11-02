@@ -1,11 +1,23 @@
-module Language.Grass.Parser () where
+module Language.Grass.Parser ( parseGrass ) where
 
 import Language.Grass.Types
 
 import           Data.Functor           ( void )
-import           Text.Megaparsec        ( some, char, many, noneOf, (<|>) )
+import           Text.Megaparsec        ( some
+                                        , char
+                                        , many
+                                        , noneOf
+                                        , (<|>)
+                                        , ParseError
+                                        , Token
+                                        , parse
+                                        , Dec
+                                        )
 import qualified Text.Megaparsec.Lexer  as L
 import           Text.Megaparsec.String ( Parser )
+
+parseGrass :: FilePath -> String -> Either (ParseError (Token String) Dec) Code
+parseGrass fp = parse codeP fp
 
 ignoredP :: Parser Char
 ignoredP = noneOf "WwvＷｗｖ"
