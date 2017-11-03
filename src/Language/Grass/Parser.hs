@@ -12,6 +12,7 @@ import           Text.Megaparsec        ( some
                                         , Token
                                         , parse
                                         , Dec
+                                        , try
                                         )
 import qualified Text.Megaparsec.Lexer  as L
 import           Text.Megaparsec.String ( Parser )
@@ -54,13 +55,15 @@ codeP = do
     return $ abs : rest
 
 restCodeP :: Parser Code
-restCodeP = restAbsP <|> restAppsP <|> mempty
+restCodeP = try restAbsP <|> try restAppsP <|> mempty
     where
         restAbsP = do
-            _   <- lowerVP
-            abs <- absP
-            return [abs]
+            _    <- lowerVP
+            abs  <- absP
+            rest <- restCodeP
+            return $ abs : rest
         restAppsP = do
             _    <- lowerVP
             apps <- many appP
-            return apps
+            rest <- restCodeP
+            return $ apps ++ rest
