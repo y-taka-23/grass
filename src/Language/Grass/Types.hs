@@ -10,6 +10,7 @@ module Language.Grass.Types (
 data Instruction =
       App Int Int
     | Abs Int Code
+    deriving ( Eq, Show )
 
 type Code = [Instruction]
 
@@ -19,6 +20,7 @@ data SemanticObject =
     | In
     | Succ
     | Closure Code Environment
+    deriving ( Eq, Show )
 
 type Environment = [SemanticObject]
 
