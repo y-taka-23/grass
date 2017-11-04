@@ -1,64 +1,88 @@
-module Language.Grass.Interpreter () where
+{-# LANGUAGE DeriveFunctor #-}
+module Language.Grass.Interpreter ( exec ) where
 
 import Language.Grass.Types
 
-import Control.Exception ( catch, throwIO )
-import Data.Char         ( ord, chr )
-import Safe              ( atMay )
-import System.IO.Error   ( isEOFError )
+import Control.Exception  ( catch, throwIO )
+import Control.Monad.Free ( Free(..), liftF )
+import Data.Char          ( ord, chr )
+import Safe               ( atMay )
+import System.IO.Error    ( isEOFError )
 
-initEnv :: Environment
-initEnv = [ Out, Succ, LowerW, In ]
+data GrassActionF a =
+      PutChar Char a
+    | GetChar (Maybe Char -> a)
+    deriving ( Functor )
 
-initDump :: Dump
-initDump = [ ([App 1 1], []), ([], []) ]
+type GrassAction = Free GrassActionF
 
-churchTrue :: SemanticObject
-churchTrue = Closure [Abs 2 [App 3 2]] [Closure [] []]
+putCharAction :: Char -> GrassAction ()
+putCharAction ch = liftF $ PutChar ch ()
 
-churchFalse :: SemanticObject
-churchFalse = Closure [Abs 2 []] []
+getCharAction :: GrassAction (Maybe Char)
+getCharAction = liftF $ GetChar id
 
-decodeChurch :: SemanticObject -> Maybe Char
-decodeChurch LowerW = Just 'w'
-decodeChurch Out    = Nothing
-decodeChurch In     = Nothing
-decodeChurch Succ   = Nothing
-decodeChurch (Closure [Abs 2 code] env) =
-    case evalChurch code [ElemInt 0, ElemFunc succ] of
-        Nothing -> Nothing
-        Just i  -> if isGrassChar (chr i) then Just (chr i) else Nothing
+boolean :: Bool -> SemanticObject
+boolean True  = Closure [Abs 2 [App 3 2]] [Closure [] []]
+boolean False = Closure [Abs 2 []] []
 
-data StackElem =
-      ElemInt  Int
-    | ElemFunc (Int -> Int)
-
-evalChurch :: Code -> [StackElem] -> Maybe Int
-evalChurch [] (ElemInt i : stack') = Just i
-evalChurch [] _                    = Nothing
-evalChurch (Abs _ _ : _) _         = Nothing
-evalChurch (App m n : code') stack =
-    case (atMay stack (m - 1), atMay stack (n - 1)) of
-        (Just (ElemFunc f), Just (ElemInt i)) -> evalChurch code' (ElemInt (f i) : stack)
-        (_,                 _               ) -> Nothing
-
-encodeChurch :: Char -> Maybe SemanticObject
-encodeChurch c
-    | isGrassChar c = Just $ Closure [Abs 2 (mkCode n)] []
-    | otherwise     = Nothing
+encode :: Char -> SemanticObject
+encode ch = Closure [Abs 2 (mkCode (ord ch))] []
     where
-        n        = ord c
         mkCode 0 = []
         mkCode n = mkCode (n - 1) ++ [App (n + 1) 1]
 
-isGrassChar :: Char -> Bool
-isGrassChar c = let n = ord c in 0 <= n && n <= 255
+decode :: SemanticObject -> Maybe Char
+decode LowerW = Just 'w'
+decode (Closure [Abs 2 c] _) =
+    case evalChurch c [EInt 0, EFunc (+1)] of
+        Nothing -> Nothing
+        Just i  -> Just $ chr i
+decode _ = Nothing
 
-succCode :: Char -> Char
-succCode c = chr $ ord c + 1 `mod` 255
+data Evaluable =
+      EInt  Int
+    | EFunc (Int -> Int)
 
-safeGetChar :: IO (Maybe Char)
-safeGetChar =
+evalChurch :: Code -> [Evaluable] -> Maybe Int
+evalChurch []             ((EInt i):_) = Just i
+evalChurch []             _            = Nothing
+evalChurch ((Abs _ _):_)  _            = Nothing
+evalChurch ((App m n):c') s            =
+    case (atMay s (m - 1), atMay s (n - 1)) of
+        (Just (EFunc f), Just (EInt i)) -> evalChurch c' ((EInt (f i)):s)
+        _                               -> Nothing
+
+succMod255 :: Char -> Char
+succMod255 ch = chr $ (ord ch + 1) `mod` 255
+
+transform :: MachineConfig -> GrassAction MachineConfig
+transform ((App m n):c, e, d) = case (atMay e (m - 1), atMay e (n - 1)) of
+    (Nothing, _      ) -> error "invalid stack access"
+    (_,       Nothing) -> error "invalid stack access"
+    (Just f,  Just x ) -> case f of
+        LowerW -> pure (c, (boolean $ decode x == Just 'w'):e, d)
+        Out -> case decode x of
+            Nothing -> error "failed to decode"
+            Just ch -> putCharAction ch >> pure (c, x:e, d)
+        In -> getCharAction >>= \mCh -> case mCh of
+            Nothing -> pure (c, x:e, d)
+            Just ch -> pure (c, (encode ch):e, d)
+        Succ -> case decode x of
+            Nothing -> error "failed to decode"
+            Just ch -> pure (c, (encode $ succMod255 ch):e, d)
+        Closure c' e' -> pure (c', x:e', (c, e):d)
+transform ((Abs 1 c'):c, e, d)  = pure (c, (Closure c' e):e, d)
+transform ((Abs n c'):c, e, d)  = pure (c, (Closure [Abs (n-1) c'] e):e, d)
+transform ([], o:_, (c', e'):d) = pure (c', o:e', d)
+transform _                     = error "no transformation rules"
+
+eval :: MachineConfig -> GrassAction ()
+eval ([], [_], []) = return ()
+eval (c, e, d)     = transform (c, e, d) >>= eval
+
+getCharOrEOF :: IO (Maybe Char)
+getCharOrEOF =
     (do
             getChar >>= return . Just
         ) `catch` (\e -> do
@@ -67,37 +91,16 @@ safeGetChar =
                 else throwIO e
         )
 
-transform :: MachineConfig -> IO MachineConfig
-transform (App m n : code, env, dump) =
-    let (func, arg) = (env !! (m - 1), env !! (n - 1))
-    in case func of
-        LowerW -> if decodeChurch LowerW == Just 'w'
-            then return (code, churchTrue  : env, dump)
-            else return (code, churchFalse : env, dump)
-        Out -> case decodeChurch arg of
-            Nothing -> error "failed to decode"
-            Just c  -> putChar c >> return (code, arg : env, dump)
-        In -> do
-            mChar <- safeGetChar
-            case mChar of
-                Nothing -> return (code, arg : env, dump)
-                Just c  -> case encodeChurch c of
-                    Nothing  -> error "failed to encode"
-                    Just res -> return (code, res : env, dump)
-        Succ -> case decodeChurch arg of
-            Nothing -> error "failed to decode"
-            Just c  -> case encodeChurch (succCode c) of
-                Nothing  -> error "unreachable"
-                Just res -> return (code, res : env, dump)
-        Closure fCode fEnv -> return (fCode, arg : fEnv, (code, env) : dump)
-transform (Abs 1 code' : code, env, dump) = return (code, Closure code' env : env, dump)
-transform (Abs n code' : code, env, dump) = return (code, Closure [Abs (n - 1) code'] env : env, dump)
-transform ([], obj : _, (code', env') : dump) = return (code', obj : env', dump)
+interpret :: GrassAction a -> IO a
+interpret (Pure x)              = return x
+interpret (Free (PutChar ch k)) = putChar ch >> interpret k
+interpret (Free (GetChar f))    = getCharOrEOF >>= interpret . f
 
-run :: Code -> IO SemanticObject
-run initCode = eval (initCode, initEnv, initDump)
-    where
-        eval :: MachineConfig -> IO SemanticObject
-        eval ([], [obj], [])   = return obj
-        eval (code, env, dump) =
-            transform (code, env, dump) >>= eval
+initEnv :: Environment
+initEnv = [ Out, Succ, LowerW, In ]
+
+initDump :: Dump
+initDump = [ ([App 1 1], []), ([], []) ]
+
+exec :: Code -> IO ()
+exec initCode = interpret $ eval (initCode, initEnv, initDump)
