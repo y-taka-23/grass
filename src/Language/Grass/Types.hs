@@ -15,7 +15,7 @@ data Instruction =
 type Code = [Instruction]
 
 data SemanticObject =
-      LowerW
+      Character Char
     | Out
     | In
     | Succ

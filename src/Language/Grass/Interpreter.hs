@@ -31,16 +31,19 @@ transform ((App m n):c, e, d) = case (atMay e (m - 1), atMay e (n - 1)) of
     (Nothing, _      ) -> error "invalid stack access"
     (_,       Nothing) -> error "invalid stack access"
     (Just f,  Just x ) -> case f of
-        LowerW -> pure (c, (boolean $ decode x == Just 'w'):e, d)
-        Out -> case decode x of
-            Nothing -> error "failed to decode"
-            Just ch -> putCharAction ch >> pure (c, x:e, d)
+        Character ch' -> case x of
+            -- TODO: stack Church booleans
+            Character ch -> undefined
+            _            -> error $ "invalid character"
+        Out -> case x of
+            Character ch -> putCharAction ch >> pure (c, x:e, d)
+            _            -> error $ "invalid character"
         In -> getCharAction >>= \mCh -> case mCh of
             Nothing -> pure (c, x:e, d)
-            Just ch -> pure (c, (encode ch):e, d)
-        Succ -> case decode x of
-            Nothing -> error "failed to decode"
-            Just ch -> pure (c, (encode $ succMod255 ch):e, d)
+            Just ch -> pure (c, (Character ch):e, d)
+        Succ -> case x of
+            Character ch -> pure (c, (Character $ succMod255 ch):e, d)
+            _            -> error "invalid character"
         Closure c' e' -> pure (c', x:e', (c, e):d)
 transform ((Abs 1 c'):c, e, d)  = pure (c, (Closure c' e):e, d)
 transform ((Abs n c'):c, e, d)  = pure (c, (Closure [Abs (n-1) c'] e):e, d)
@@ -67,7 +70,7 @@ interpret (Free (PutChar ch k)) = putChar ch >> interpret k
 interpret (Free (GetChar f))    = getCharOrEOF >>= interpret . f
 
 initEnv :: Environment
-initEnv = [ Out, Succ, LowerW, In ]
+initEnv = [ Out, Succ, Character 'w', In ]
 
 initDump :: Dump
 initDump = [ ([App 1 1], []), ([], []) ]
