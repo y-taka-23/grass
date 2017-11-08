@@ -17,7 +17,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     Language.Grass.Types
                      , Language.Grass.Parser
-                     , Language.Grass.Encoder
                      , Language.Grass.Interpreter
   build-depends:       base >= 4.7 && < 5
                      , free
@@ -38,7 +37,6 @@ test-suite grass-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       Language.Grass.ParserSpec
-                     , Language.Grass.EncoderSpec
   build-depends:       base
                      , hspec
                      , QuickCheck

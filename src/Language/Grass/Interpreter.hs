@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Language.Grass.Interpreter ( exec ) where
 
-import Language.Grass.Encoder
 import Language.Grass.Types
 
 import Control.Exception  ( catch, throwIO )
