@@ -23,6 +23,10 @@ putCharAction ch = liftF $ PutChar ch ()
 getCharAction :: GrassAction (Maybe Char)
 getCharAction = liftF $ GetChar id
 
+boolean :: Bool -> SemanticObject
+boolean True  = Closure [Abs 1 [App 3 2]] [Closure [] []]
+boolean False = Closure [Abs 1 []]        []
+
 succMod255 :: Char -> Char
 succMod255 ch = chr $ (ord ch + 1) `mod` 255
 
@@ -33,7 +37,7 @@ transform ((App m n):c, e, d) = case (atMay e (m - 1), atMay e (n - 1)) of
     (Just f,  Just x ) -> case f of
         Character ch' -> case x of
             -- TODO: stack Church booleans
-            Character ch -> undefined
+            Character ch -> pure (c, (boolean $ ch' == ch):e, d)
             _            -> error $ "invalid character"
         Out -> case x of
             Character ch -> putCharAction ch >> pure (c, x:e, d)

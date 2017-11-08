@@ -1,4 +1,4 @@
-module Language.Grass.Encoder ( boolean, encode, decode ) where
+module Language.Grass.Encoder ( encode, decode ) where
 
 import Language.Grass.Types
 
