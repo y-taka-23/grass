@@ -35,7 +35,6 @@ transform ((App m n):c, e, d) = case (atMay e (m - 1), atMay e (n - 1)) of
     (_,       Nothing) -> error "invalid stack access"
     (Just f,  Just x ) -> case f of
         Character ch' -> case x of
-            -- TODO: stack Church booleans
             Character ch -> pure (c, (boolean $ ch' == ch):e, d)
             _            -> error $ "invalid character"
         Out -> case x of
