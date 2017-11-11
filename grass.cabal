@@ -38,6 +38,7 @@ test-suite grass-test
   main-is:             Spec.hs
   other-modules:       Language.Grass.ParserSpec
   build-depends:       base
+                     , free
                      , hspec
                      , QuickCheck
                      , grass

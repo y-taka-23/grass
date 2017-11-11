@@ -1,5 +1,12 @@
 {-# LANGUAGE DeriveFunctor #-}
-module Language.Grass.Interpreter ( exec ) where
+module Language.Grass.Interpreter (
+      GrassActionF(..)
+    , GrassAction
+    , eval
+    , exec
+    , initEnv
+    , initDump
+    ) where
 
 import Language.Grass.Types
 
