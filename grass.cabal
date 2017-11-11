@@ -36,7 +36,8 @@ test-suite grass-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       Language.Grass.ParserSpec
+  other-modules:       Language.Grass.InterpreterSpec
+                     , Language.Grass.ParserSpec
   build-depends:       base
                      , free
                      , hspec
