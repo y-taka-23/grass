@@ -18,6 +18,11 @@ mock (Free (GetChar f))    (ch:stdin') = mock (f (Just ch)) stdin'
 execMock :: MachineConfig -> [Char] -> [Char]
 execMock cfg stdin = mock (eval cfg) stdin
 
+encode :: Int -> SemanticObject
+encode n = Closure [Abs 1 body] []
+    where
+        body = map (\i -> App i 1) [2 .. n + 1]
+
 spec :: Spec
 spec = do
     describe "eval" $ do
@@ -27,6 +32,12 @@ spec = do
             prop "makes In stack the head of stdin against Env" prop_in
             prop "makes Succ increment the top of Env in mod 255" prop_succ
             prop "makes a char test its equality with the arg" prop_char
+
+        context "when you evalutate Church numbers" $ do
+            prop "computes Church encoding as iteration" prop_iter
+            prop "computes the sum of two numbers" prop_plus
+            prop "copputes the product of two numbers" prop_mult
+            prop "computes the exponential of the 1st arg to the 2nd" prop_pow
 
 prop_out :: Char -> Bool
 prop_out ch = execMock (code, env, initDump) [] == [ch]
@@ -59,3 +70,46 @@ prop_char ch1 ch2 =
                 , Character 'Y'
                 , Out
                 ]
+
+prop_iter :: Char -> NonNegative Int -> Bool
+prop_iter ch nnn = execMock (code, env, initDump) [] == replicate n ch
+    where
+        n    = getNonNegative nnn
+        code = [Abs 1 [App 2 4, App 1 4]]
+        env  = [encode n, Character ch, Out]
+
+-- λn m f x. n f (m f x)
+prop_plus :: Char -> NonNegative Int -> NonNegative Int -> Bool
+prop_plus ch nnn nnm =
+    execMock (code, env, initDump) [] == replicate (n + m) ch
+        where
+            (n, m) = (getNonNegative nnn, getNonNegative nnm)
+            code   = [
+                  Abs 4 [App 4 2, App 4 3, App 1 3, App 3 1]
+                , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
+                ]
+            env    = [encode m, encode n, Character ch, Out]
+
+-- λn m f. n (m f)
+prop_mult :: Char -> NonNegative Int -> NonNegative Int -> Bool
+prop_mult ch nnn nnm =
+    execMock (code , env, initDump) [] == replicate (n * m) ch
+        where
+            (n, m) = (getNonNegative nnn, getNonNegative nnm)
+            code   = [
+                  Abs 3 [App 2 1, App 4 1]
+                , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
+                ]
+            env    = [encode m, encode n, Character ch, Out]
+
+-- λn m. m n
+prop_pow :: Char -> NonNegative Int -> Bool
+prop_pow ch nnn =
+    execMock (code , env, initDump) [] == replicate (n ^ 2) ch
+        where
+            n    = getNonNegative nnn
+            code = [
+                  Abs 2 [App 1 2]
+                , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
+                ]
+            env  = [encode 2, encode n, Character ch, Out]
