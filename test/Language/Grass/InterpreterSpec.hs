@@ -96,7 +96,7 @@ prop_plus ch nnn nnm =
 -- λn m f. n (m f)
 prop_mult :: Char -> NonNegative Int -> NonNegative Int -> Bool
 prop_mult ch nnn nnm =
-    execMock (code , env, initDump) [] == replicate (n * m) ch
+    execMock (code, env, initDump) [] == replicate (n * m) ch
         where
             (n, m) = (getNonNegative nnn, getNonNegative nnm)
             code   = [
@@ -108,7 +108,7 @@ prop_mult ch nnn nnm =
 -- λn m. m n
 prop_pow :: Char -> NonNegative Int -> Bool
 prop_pow ch nnn =
-    execMock (code , env, initDump) [] == replicate (n ^ 2) ch
+    execMock (code, env, initDump) [] == replicate (n ^ 2) ch
         where
             n    = getNonNegative nnn
             code = [
