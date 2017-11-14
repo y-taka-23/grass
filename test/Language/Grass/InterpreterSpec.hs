@@ -39,6 +39,9 @@ spec = do
             prop "copputes the product of two numbers" prop_mult
             prop "computes the exponential of the 1st arg to the 2nd" prop_pow
 
+        context "when you evaluate recursive functions" $ do
+            prop "loops the main function infinitely" prop_infinite
+
 prop_out :: Char -> Bool
 prop_out ch = execMock (code, env, initDump) [] == [ch]
     where
@@ -113,3 +116,11 @@ prop_pow ch nnn =
                 , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
                 ]
             env  = [encode 2, encode n, Character ch, Out]
+
+prop_infinite :: Char -> NonNegative Int -> Bool
+prop_infinite ch nnn =
+    take n (execMock (code, env, initDump) []) == replicate n ch
+        where
+            n    = getNonNegative nnn
+            code = [Abs 1 [App 3 2, App 2 2]]
+            env  = [Character ch, Out]
