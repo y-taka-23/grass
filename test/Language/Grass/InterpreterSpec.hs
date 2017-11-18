@@ -39,6 +39,10 @@ spec = do
             prop "copputes the product of two numbers" prop_mult
             prop "computes the exponential of the 1st arg to the 2nd" prop_pow
 
+        context "when you evaluate Church booleans" $ do
+            prop "handles the true constant" prop_true
+            prop "handles the false constant" prop_false
+
         context "when you evaluate recursive functions" $ do
             prop "loops the main function infinitely" prop_infinite
 
@@ -116,6 +120,18 @@ prop_pow ch nnn =
                 , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
                 ]
             env  = [encode 2, encode n, Character ch, Out]
+
+prop_true :: Char -> Char -> Bool
+prop_true ch1 ch2 = execMock (code, env, initDump) [] == [ch1]
+    where
+        code = [Abs 1 [App 2 4, App 1 4, App 7 1]]
+        env  = [boolean True, Character ch2, Character ch1, Out]
+
+prop_false :: Char -> Char -> Bool
+prop_false ch1 ch2 = execMock (code, env, initDump) [] == [ch2]
+    where
+        code = [Abs 1 [App 2 4, App 1 4, App 7 1]]
+        env  = [boolean False, Character ch2, Character ch1, Out]
 
 prop_infinite :: Char -> NonNegative Int -> Bool
 prop_infinite ch nnn =

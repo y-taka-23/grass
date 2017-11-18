@@ -2,6 +2,7 @@
 module Language.Grass.Interpreter (
       GrassActionF(..)
     , GrassAction
+    , boolean
     , eval
     , exec
     , initEnv
