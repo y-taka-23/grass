@@ -42,6 +42,8 @@ spec = do
         context "when you evaluate Church booleans" $ do
             prop "handles the true constant" prop_true
             prop "handles the false constant" prop_false
+            prop "handles the and operater" prop_and
+            prop "handles the or operater" prop_or
 
         context "when you evaluate recursive functions" $ do
             prop "loops the main function infinitely" prop_infinite
@@ -132,6 +134,28 @@ prop_false ch1 ch2 = execMock (code, env, initDump) [] == [ch2]
     where
         code = [Abs 1 [App 2 4, App 1 4, App 7 1]]
         env  = [boolean False, Character ch2, Character ch1, Out]
+
+-- λp q. p q p
+prop_and :: Char -> Char -> Bool -> Bool -> Bool
+prop_and ch1 ch2 b1 b2 =
+    execMock (code, env, initDump) [] == if b1 && b2 then [ch1] else [ch2]
+        where
+            code = [
+                  Abs 2 [App 2 1, App 1 3]
+                , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8, App 11 1]
+                ]
+            env  = [boolean b2, boolean b1, Character ch2, Character ch1, Out]
+
+-- λp q. p p q
+prop_or :: Char -> Char -> Bool -> Bool -> Bool
+prop_or ch1 ch2 b1 b2 =
+    execMock (code, env, initDump) [] == if b1 || b2 then [ch1] else [ch2]
+        where
+            code = [
+                  Abs 2 [App 2 2, App 1 2]
+                , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8, App 11 1]
+                ]
+            env  = [boolean b2, boolean b1, Character ch2, Character ch1, Out]
 
 prop_infinite :: Char -> NonNegative Int -> Bool
 prop_infinite ch nnn =
