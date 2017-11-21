@@ -45,6 +45,7 @@ spec = do
             prop "handles the and operater" prop_and
             prop "handles the or operater" prop_or
             prop "handles the not operater" prop_not
+            prop "tests whether the given number equals zero" prop_iszero
 
         context "when you evaluate recursive functions" $ do
             prop "loops the main function infinitely" prop_infinite
@@ -169,6 +170,27 @@ prop_not ch1 ch2 b =
                 ]
             env  = [
                   boolean b
+                , boolean True
+                , boolean False
+                , Character ch2
+                , Character ch1
+                , Out
+                ]
+
+-- λn. n (λx. FALSE) TRUE
+prop_iszero :: Char -> Char -> NonNegative Int -> Bool
+prop_iszero ch1 ch2 nnn =
+    execMock (code, env, initDump) [] == if n == 0 then [ch1] else [ch2]
+        where
+            n    = getNonNegative nnn
+            code = [
+                  Abs 1 []
+                , Abs 1 [App 2 5]
+                , Abs 1 [App 1 2, App 1 6]
+                , Abs 1 [App 2 5, App 1 10, App 1 10, App 13 1]
+                ]
+            env  = [
+                  encode n
                 , boolean True
                 , boolean False
                 , Character ch2
