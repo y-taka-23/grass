@@ -83,42 +83,39 @@ prop_char ch1 ch2 =
                 ]
 
 prop_iter :: Char -> NonNegative Int -> Bool
-prop_iter ch nnn = execMock (code, env, initDump) [] == replicate n ch
-    where
-        n    = getNonNegative nnn
-        code = [Abs 1 [App 2 4, App 1 4]]
-        env  = [encode n, Character ch, Out]
+prop_iter ch (NonNegative n) =
+    execMock (code, env, initDump) [] == replicate n ch
+        where
+            code = [Abs 1 [App 2 4, App 1 4]]
+            env  = [encode n, Character ch, Out]
 
 -- λn m f x. n f (m f x)
 prop_plus :: Char -> NonNegative Int -> NonNegative Int -> Bool
-prop_plus ch nnn nnm =
+prop_plus ch (NonNegative n) (NonNegative m) =
     execMock (code, env, initDump) [] == replicate (n + m) ch
         where
-            (n, m) = (getNonNegative nnn, getNonNegative nnm)
-            code   = [
+            code = [
                   Abs 4 [App 4 2, App 4 3, App 1 3, App 3 1]
                 , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
                 ]
-            env    = [encode m, encode n, Character ch, Out]
+            env  = [encode m, encode n, Character ch, Out]
 
 -- λn m f. n (m f)
 prop_mult :: Char -> NonNegative Int -> NonNegative Int -> Bool
-prop_mult ch nnn nnm =
+prop_mult ch (NonNegative n) (NonNegative m) =
     execMock (code, env, initDump) [] == replicate (n * m) ch
         where
-            (n, m) = (getNonNegative nnn, getNonNegative nnm)
-            code   = [
+            code = [
                   Abs 3 [App 2 1, App 4 1]
                 , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
                 ]
-            env    = [encode m, encode n, Character ch, Out]
+            env  = [encode m, encode n, Character ch, Out]
 
 -- λn m. m n
 prop_pow :: Char -> NonNegative Int -> Bool
-prop_pow ch nnn =
+prop_pow ch (NonNegative n) =
     execMock (code, env, initDump) [] == replicate (n ^ 2) ch
         where
-            n    = getNonNegative nnn
             code = [
                   Abs 2 [App 1 2]
                 , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
@@ -179,10 +176,9 @@ prop_not ch1 ch2 b =
 
 -- λn. n (λx. FALSE) TRUE
 prop_iszero :: Char -> Char -> NonNegative Int -> Bool
-prop_iszero ch1 ch2 nnn =
+prop_iszero ch1 ch2 (NonNegative n) =
     execMock (code, env, initDump) [] == if n == 0 then [ch1] else [ch2]
         where
-            n    = getNonNegative nnn
             code = [
                   Abs 1 []
                 , Abs 1 [App 2 5]
@@ -199,9 +195,8 @@ prop_iszero ch1 ch2 nnn =
                 ]
 
 prop_infinite :: Char -> NonNegative Int -> Bool
-prop_infinite ch nnn =
+prop_infinite ch (NonNegative n) =
     take n (execMock (code, env, initDump) []) == replicate n ch
         where
-            n    = getNonNegative nnn
             code = [Abs 1 [App 3 2, App 2 2]]
             env  = [Character ch, Out]
