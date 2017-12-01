@@ -28,10 +28,10 @@ spec = do
     describe "eval" $ do
 
         context "when you eavluate primitives" $ do
-            prop "makes Out output the arg to stdout" prop_out
-            prop "makes In stack the head of stdin against Env" prop_in
-            prop "makes Succ increment the top of Env in mod 255" prop_succ
-            prop "makes a char test its equality with the arg" prop_char
+            prop "makes Out output the arg to stdout" prop_pout
+            prop "makes In stack the head of stdin against Env" prop_pin
+            prop "makes Succ increment the top of Env in mod 255" prop_psucc
+            prop "makes a char test its equality with the arg" prop_pchar
 
         context "when you evalutate Church numbers" $ do
             prop "computes Church encoding as iteration" prop_iter
@@ -50,27 +50,27 @@ spec = do
         context "when you evaluate recursive functions" $ do
             prop "loops the main function infinitely" prop_infinite
 
-prop_out :: Char -> Bool
-prop_out ch = execMock (code, env, initDump) [] == [ch]
+prop_pout :: Char -> Bool
+prop_pout ch = execMock (code, env, initDump) [] == [ch]
     where
         code = [Abs 1 [App 3 2]]
         env  = [Character ch, Out]
 
-prop_in :: Char -> Bool
-prop_in ch = execMock (code, env, initDump) [ch] == [ch]
+prop_pin :: Char -> Bool
+prop_pin ch = execMock (code, env, initDump) [ch] == [ch]
     where
         code = [Abs 1 [App 2 2, App 4 1]]
         env  = [In, Out]
 
-prop_succ :: Char -> Bool
-prop_succ ch = ord res == (ord ch + 1) `mod` 255
+prop_psucc :: Char -> Bool
+prop_psucc ch = ord res == (ord ch + 1) `mod` 255
     where
         code  = [Abs 1 [App 3 2, App 5 1]]
         env   = [Character ch, Succ, Out]
         [res] = execMock (code, env, initDump) []
 
-prop_char :: Char -> Char -> Bool
-prop_char ch1 ch2 =
+prop_pchar :: Char -> Char -> Bool
+prop_pchar ch1 ch2 =
     execMock (code, env, initDump) [] == if ch1 == ch2 then ['Y'] else ['N']
         where
             code  = [Abs 1 [App 2 3, App 1 6, App 1 6, App 9 1]]
