@@ -38,6 +38,7 @@ spec = do
             prop "computes the sum of two numbers" prop_plus
             prop "copputes the product of two numbers" prop_mult
             prop "computes the exponential of the 1st arg to the 2nd" prop_pow
+            prop "computes the successor of the arg" prop_succ
 
         context "when you evaluate Church booleans" $ do
             prop "handles the true constant" prop_true
@@ -121,6 +122,17 @@ prop_pow ch (NonNegative n) =
                 , Abs 1 [App 2 4, App 1 4, App 1 8, App 1 8]
                 ]
             env  = [encode 2, encode n, Character ch, Out]
+
+-- λn f x. f (n f x)
+prop_succ :: Char -> NonNegative Int -> Bool
+prop_succ ch (NonNegative n) =
+    execMock (code, env, initDump) [] == replicate (n + 1) ch
+        where
+            code = [
+                  Abs 3 [App 3 2, App 1 2, App 4 1]
+                , Abs 1 [App 2 3, App 1 6, App 1 6]
+                ]
+            env = [encode n, Character ch, Out]
 
 prop_true :: Char -> Char -> Bool
 prop_true ch1 ch2 = execMock (code, env, initDump) [] == [ch1]
