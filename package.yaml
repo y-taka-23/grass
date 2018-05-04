@@ -15,10 +15,6 @@ dependencies:
 
 library:
   source-dirs: src
-  exposed-modules:
-  - Language.Grass.Types
-  - Language.Grass.Parser
-  - Language.Grass.Interpreter
   dependencies:
   - free
   - megaparsec
